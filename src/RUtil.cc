@@ -864,7 +864,21 @@ TH2D * RUtil::FFT::avgSpectrograms(vector<TH2D*> inh){
   return out;
 }
 
+TGraph* RUtil::FFT::real(TGraph2D *ingr){
+  auto og=new TGraph(ingr->GetN()/2);
+  for(int i=0;i<ingr->GetN()/2;i++){
+    og->SetPoint(i, ingr->GetX()[i], ingr->GetY()[i]);
+  }
+  return og;
+}
 
+TGraph* RUtil::FFT::imag(TGraph2D *ingr){
+  auto og=new TGraph(ingr->GetN()/2);
+  for(int i=0;i<ingr->GetN()/2;i++){
+    og->SetPoint(i, ingr->GetX()[i], ingr->GetZ()[i]);
+  }
+  return og;
+}
 
 /*******************SVD things**********************
 
@@ -2616,6 +2630,23 @@ vector<TGraph*> RUtil::alignMultipleToOther(vector<TGraph*> inGr, vector<TGraph*
   return outgraphs;
 }
 
+TGraph * RUtil::zeros(int len, double dt){
+  auto og=new TGraph(len);
+  for(int i=0;i<len;i++){
+    og->SetPoint(i, (double)i*dt, 0.);
+  }
+  return og;
+}
+
+TGraph * RUtil::zeros(double start, double stop, int len){
+  double dx=(stop-start)/len;
+  auto og=new TGraph(len);
+  for(int i=0;i<len;i++){
+    og->SetPoint(i, start+(double)i*dx, 0.);
+  }
+  return og;
+}
+
 
 TGraph * RUtil::makeCW(double freq,  double amp, double t_min, double t_max, double GSs, double phase){
 
@@ -2786,7 +2817,7 @@ TGraph * RUtil::brickWallFilter(TGraph * inGr, double low, double high){
 }
 
 TGraph * RUtil::addNoise(TGraph * inGr, double level, TString type){
-  cout<<type<<endl;
+  //  cout<<type<<endl;
   auto outGr=new TGraph();
   auto rand=new TRandom3();
   rand->SetSeed();
@@ -3462,6 +3493,22 @@ TGraph * RUtil::applyWindow(TGraph *inGr, double startt, double endt, int type){
   return outGr;
 }
 
+TGraph2D * RUtil::applyWindow(TGraph2D *inGr, double startt, double endt, int type){
+  auto outGr=new TGraph2D(inGr->GetN());
+  int lowInd=RUtil::getIndex(inGr, startt);
+  int highInd=RUtil::getIndex(inGr, endt);
+  int n=highInd-lowInd;
+  for(int i=0;i<inGr->GetN();i++){
+    if(i<lowInd||i>highInd){
+      outGr->SetPoint(i, inGr->GetX()[i], 0., 0.);
+    }
+    else{
+      outGr->SetPoint(i, inGr->GetX()[i], inGr->GetY()[i]*RUtil::window(i-lowInd, n, type), inGr->GetZ()[i]*RUtil::window(i-lowInd, n, type));
+    }
+  }
+  return outGr;
+}
+
 TGraph * RUtil::plotWindow(double peakAmplitude, double len, double GSs, double startt, double endt, int type){
   int N=len*GSs;
   double dt=1./GSs;
@@ -3775,6 +3822,8 @@ void RUtil::draw(int nGraphs, TGraph** inGr, TString option){
   }
 }
 
+
+  
 
 
 TGraph * RUtil::toGraph(TH1D * hist){
@@ -4260,4 +4309,33 @@ TGraph * RUtil::demod::deChirp(TGraph * one, int offset){
     }
   }
   return outgr;
+}
+
+
+TGraph * RUtil::demod::envelopeDetectorFritschEQ14(TGraph * ingr, double fc, int N){
+  double fs=ingr->GetX()[1]-ingr->GetX()[0];
+  double omega0=2*RUtil::pi*fc/fs;
+  auto outgr=new TGraph(ingr->GetN()-N);
+
+  for(int i=0;i<ingr->GetN()-N;i++){
+    outgr->SetPoint(i, ingr->GetX()[i], sqrt(pow(ingr->GetY()[i+N], 2)+ pow((ingr->GetY()[i]/sin(omega0)) - (ingr->GetY()[i+N]/tan(omega0)),2)));
+  }
+  return outgr;
+    
+}
+
+
+
+
+
+TGraph * RUtil::demod::envelopeDetectorFritschEQ11(TGraph * ingr, double fc){
+  double fs=ingr->GetX()[1]-ingr->GetX()[0];
+  double omega0=2*RUtil::pi*fc/fs;
+  auto outgr=new TGraph(ingr->GetN()-1);
+  auto amp=1./sin(omega0);
+  for(int i=0;i<ingr->GetN()-1;i++){
+    outgr->SetPoint(i, ingr->GetX()[i], amp*sqrt(pow(ingr->GetY()[i], 2)+ pow(ingr->GetY()[i+1], 2)-2*ingr->GetY()[i]*ingr->GetY()[i+1]*cos(omega0)));
+  }
+  return outgr;
+    
 }

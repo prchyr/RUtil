@@ -401,6 +401,10 @@ utilities.
   TGraph * swap(TGraph * inGr);
   //same as removeMean but the original graph is changed
   int removeMeanInPlace(TGraph *gr, double t_low=0., double t_high=999999.);
+  //make an empty tgraph with some time resolution dt
+  TGraph * zeros(int len, double dt);
+  //make an empty tgraph with start, stop, and number of points
+  TGraph *zeros(double start, double stop, int len);
   //make CW with given parameters.
   TGraph * makeCW(double freq,  double amp, double t_min=0., double t_max=1000., double GSs=20., double phase=0.);
   //sample CW at the given times
@@ -457,6 +461,9 @@ utilities.
   //apply a window of the selected type to the graph inGr in time window.
   //and add it to the indicated region of the background graph.
   TGraph * applyWindow(TGraph* inGr, double startt, double endt, int type=0);
+  //apply a window of the selected type to the graph inGr in time window.
+  //and add it to the indicated region of the background graph.
+  TGraph2D * applyWindow(TGraph2D* inGr, double startt, double endt, int type=0);
   //plot a window with the given parameters.
   TGraph * plotWindow(double peakAmplitude, double len, double GSs, double startt, double endt, int type);
   TGraph * makeNullData(TGraph *sig, TGraph * back, double t_min, double t_max, double scale=1.);
@@ -629,7 +636,8 @@ The FFT namespace, for everything to do with FFTs.
 
     TGraph * psd(TGraph *inGr, int dbFlag=1, double rBW=0.);
 
-
+    TGraph* real(TGraph2D* ingr);
+    TGraph* imag(TGraph2D* ingr);
 /*
       return the spectrogram, with various options:
 
@@ -734,6 +742,9 @@ the SVD namespace, which has useful utilities for SVD filtration methods
     
     TGraph * normalizedDeChirp(TGraph * one, int offset);
     TGraph * deChirp(TGraph * one, int offset);
+    TGraph * envelopeDetectorFritschEQ10(TGraph * ingr, double fc);
+    TGraph * envelopeDetectorFritschEQ11(TGraph * ingr, double fc);
+    TGraph * envelopeDetectorFritschEQ14(TGraph * ingr, double fc, int N);
   }
 }
 
