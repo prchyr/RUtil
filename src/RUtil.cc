@@ -79,9 +79,11 @@ TGraph2D * RUtil::FFT::fft(TGraph * inGr){
   
   double *arr=makeIndices(n, df);
   TGraph2D *outGr=new TGraph2D(n, arr, &re[0], &im[0]);
-  for (int i=0;i<outGr->GetN();i++){
-    outGr->GetY()[i] *= norm;
-    outGr->GetZ()[i] *= norm;
+  for (int i=0;i<outGr->GetN()/2;i++){
+    outGr->SetPoint(i, arr[i], re[i]*norm,im[i]*norm);
+    outGr->SetPoint(outGr->GetN()/2 +i, arr[outGr->GetN()/2+i], re[outGr->GetN()/2-i]*norm, im[outGr->GetN()/2-i]*norm);
+    //    outGr->GetY()[i] *= norm;
+    //outGr->GetZ()[i] *= norm;
   }
   delete arr;
   //delete TVirtualFFT::GetCurrentTransform();
@@ -90,6 +92,34 @@ TGraph2D * RUtil::FFT::fft(TGraph * inGr){
   delete outGr;
   return fXfrmGr2D;
 }
+
+// void RUtil::FFT::fft(TGraph * inGr, TGraph2D outGr){
+
+//   int n = inGr->GetN();
+//   if(n!=fN){
+//     fN=n;
+//     fftr2c=TVirtualFFT::FFT(1, &fN, "R2C P");
+//   }
+
+//   double dt = inGr->GetX()[50]-inGr->GetX()[49];
+//   double fs = 1./dt;
+  
+//   fftr2c->SetPoints(inGr->GetY());
+//   fftr2c->Transform();
+  
+//   double re[n], im[n];
+//   fftr2c->GetPointsComplex(re, im);
+
+//   double df=fs/(n);
+
+//   double norm=sqrt(2./(double)n);
+  
+
+//   for(int i=0;i<n;i++){
+//     outGr->SetPoint(outGr->GetN(), (double)i*df, re[i]*norm, im[i]*norm);
+//   }
+
+// }
 
 int RUtil::FFT::fft(int n, double * in, complex<double> *out){
   //  int n = inGr->GetN();
@@ -273,7 +303,7 @@ TGraph * RUtil::FFT::ifft(TGraph2D * inGr){
     fftc2r=TVirtualFFT::FFT(1, &fNi, "C2R P K");
   }
   
-  double df = inGr->GetX()[50]-inGr->GetX()[49];
+  double df = inGr->GetX()[1]-inGr->GetX()[0];
   double fs=(double)n*df;
   double dt = 1./fs;
   
@@ -323,6 +353,24 @@ int RUtil::FFT::ifft(int n, complex<double> * in, double *out){
   return 1;
 }
 
+TGraph * RUtil::FFT::convolve(TGraph *inGr1, TGraph *inGr2){
+  auto fft1=(TGraph2D*)RUtil::FFT::fft(inGr1)->Clone();
+  fft1->SetName("one");
+  //  auto flipped=RUtil::flip(inGr2);
+  auto fft2=(TGraph2D*)RUtil::FFT::fft(inGr2)->Clone();
+  fft2->SetName("two");
+  //  RUtil::FFT::fftshift(fft1);
+  //RUtil::FFT::fftshift(fft2);
+  auto conv=RUtil::multComplex(fft1,fft2);
+  auto inv=(TGraph*)RUtil::FFT::ifft(conv)->Clone();
+  RUtil::FFT::fftshift(inv);
+  delete fft1;
+  //delete flipped;
+  delete fft2;
+  delete conv;
+  return inv;
+}
+
 void RUtil::FFT::fftshift(int N, complex<double>* in){
   for(int j=N/2;j<N;j++){
      auto temp=in[j];
@@ -331,6 +379,28 @@ void RUtil::FFT::fftshift(int N, complex<double>* in){
   }
 }
 
+void RUtil::FFT::fftshift(TGraph2D * in){
+  auto N=in->GetN();
+  for(int j=N/2;j<N;j++){
+    auto tempY=in->GetY()[j];
+    auto tempZ=in->GetZ()[j];
+    in->SetPoint(j, in->GetX()[j], in->GetY()[j-(N/2)], in->GetZ()[j-(N/2)]);
+    in->SetPoint(j-(N/2), in->GetX()[j-(N/2)], tempY, tempZ);   
+    //     in[j]=in[j-(N/2)];
+    //in[j-(N/2)]=temp;
+  }
+}
+
+void RUtil::FFT::fftshift(TGraph * in){
+  auto N=in->GetN();
+  for(int j=N/2;j<N;j++){
+    auto tempY=in->GetY()[j];
+    in->SetPoint(j, in->GetX()[j], in->GetY()[j-(N/2)]);
+    in->SetPoint(j-(N/2), in->GetX()[j-(N/2)], tempY);   
+    //     in[j]=in[j-(N/2)];
+    //in[j-(N/2)]=temp;
+  }
+}
 
 
 
@@ -406,35 +476,35 @@ TGraph * RUtil::FFT::hilbertTransform(TGraph *inGr){
   auto infft=fft(inGr);
   int n=infft->GetN();
 
-  // for(int i=0;i<n;i++){
-  //   double im=infft->GetZ()[i];
-  //   infft->GetZ()[i]=infft->GetY()[i];
-  //   infft->GetY()[i]=-im;
+  for(int i=0;i<n;i++){
+    double im=infft->GetZ()[i];
+    infft->GetZ()[i]=infft->GetY()[i];
+    infft->GetY()[i]=-im;
+  }
+
+  // for(int i=0;i<n/2;i++){
+  //   double x=infft->GetY()[i];
+  //   double y=infft->GetZ()[i];
+  //   double r=sqrt((x*x)+(y*y));
+  //   double phi=TMath::ATan2(y,x);
+  //   phi-=RUtil::pi/2.;
+  //   x=r*cos(phi);
+  //   y=r*sin(phi);
+  //   infft->GetY()[i]=x;
+  //   infft->GetZ()[i]=y;
   // }
 
-  for(int i=0;i<n/2;i++){
-    double x=infft->GetY()[i];
-    double y=infft->GetZ()[i];
-    double r=sqrt((x*x)+(y*y));
-    double phi=TMath::ATan2(y,x);
-    phi-=RUtil::pi/2.;
-    x=r*cos(phi);
-    y=r*sin(phi);
-    infft->GetY()[i]=x;
-    infft->GetZ()[i]=y;
-  }
-
-  for(int i=n/2;i<n;i++){
-    double x=infft->GetY()[i];
-    double y=infft->GetZ()[i];
-    double r=sqrt((x*x)+(y*y));
-    double phi=TMath::ATan2(y,x);
-    phi+=RUtil::pi/2.;
-    x=r*cos(phi);
-    y=r*sin(phi);
-    infft->GetY()[i]=x;
-    infft->GetZ()[i]=y;
-  }
+  // for(int i=n/2;i<n;i++){
+  //   double x=infft->GetY()[i];
+  //   double y=infft->GetZ()[i];
+  //   double r=sqrt((x*x)+(y*y));
+  //   double phi=TMath::ATan2(y,x);
+  //   phi+=RUtil::pi/2.;
+  //   x=r*cos(phi);
+  //   y=r*sin(phi);
+  //   infft->GetY()[i]=x;
+  //   infft->GetZ()[i]=y;
+  // }
   auto outGr=ifft(infft);
   return outGr;
 }
@@ -605,6 +675,7 @@ double RUtil::FFT::getPhaseAt(TGraph *inGr, double freq){
   auto ph=TMath::ATan2(fftGr->GetZ()[index], fftGr->GetY()[index]);
   //  cout<<index<<" "<<fftGr->GetX()[index]<<endl;
   //  delete fftGr;
+
   return ph;
 }
 
@@ -865,16 +936,16 @@ TH2D * RUtil::FFT::avgSpectrograms(vector<TH2D*> inh){
 }
 
 TGraph* RUtil::FFT::real(TGraph2D *ingr){
-  auto og=new TGraph(ingr->GetN()/2);
-  for(int i=0;i<ingr->GetN()/2;i++){
+  auto og=new TGraph(ingr->GetN());
+  for(int i=0;i<ingr->GetN();i++){
     og->SetPoint(i, ingr->GetX()[i], ingr->GetY()[i]);
   }
   return og;
 }
 
 TGraph* RUtil::FFT::imag(TGraph2D *ingr){
-  auto og=new TGraph(ingr->GetN()/2);
-  for(int i=0;i<ingr->GetN()/2;i++){
+  auto og=new TGraph(ingr->GetN());
+  for(int i=0;i<ingr->GetN();i++){
     og->SetPoint(i, ingr->GetX()[i], ingr->GetZ()[i]);
   }
   return og;
@@ -1181,6 +1252,17 @@ TGraph * RUtil::normalize(TGraph * inGr){
     return og;
   }
 
+double RUtil::normalize(double * result, int N, double *input){
+  double length=N;
+  double norm=0;
+    for(int i=0;i<length;i++){
+      norm+=input[i]*input[i];
+    }
+
+    for(int i=0;i<length;i++)result[i]=input[i]/sqrt(norm);
+    return sqrt(norm);
+  }
+
 TGraph * RUtil::normToPeak(TGraph * inGr){
     double length=inGr->GetN();
     double peak=TMath::MaxElement(inGr->GetN(), inGr->GetY());
@@ -1434,19 +1516,25 @@ int RUtil::getIndex(TGraph2D * gr, double t){
   int index=0;
   double minVal=999999.;
   for(int i=0;i<gr->GetN()-1;i++){
-    auto val=abs(gr->GetX()[i]-t);
-    if(val<minVal){
-      minVal=val;
+    if(gr->GetX()[i+1]>t){
       index=i;
+      return index;
     }
-    //if(gr->GetX()[i]==t||gr->GetX()[i+1]>t){
-    // cout<<gr->GetX()[i]<<" "<<gr->GetX()[i+1]<<endl;
-    // index=i;
-    // return index;
-    //}
   }
+  // for(int i=0;i<gr->GetN()-1;i++){
+  //   auto val=abs(gr->GetX()[i]-t);
+  //   if(val<minVal){
+  //     minVal=val;
+  //     index=i;
+  //   }
+  //   //if(gr->GetX()[i]==t||gr->GetX()[i+1]>t){
+  //   // cout<<gr->GetX()[i]<<" "<<gr->GetX()[i+1]<<endl;
+  //   // index=i;
+  //   // return index;
+  //   //}
+  // }
   
-  return index;
+  //return index;
 }
 
 double RUtil::snr(TGraph *gr, double noiseStart, double noiseEnd){
@@ -1611,6 +1699,19 @@ TH1F * RUtil::histogram(TGraph *gr, int nbins, TString title, TString name){
   return hh;
 }
 
+TH1D * RUtil::toHistogram(TGraph *gr, int nbins, TString title, TString name){
+  //auto len=sizeof(vals)/sizeof(vals[0]);
+  auto vals=gr->GetY();
+  auto len=gr->GetN();
+  auto xlow=gr->GetX()[0];
+  auto xhigh=gr->GetX()[gr->GetN()-1];
+  auto hh=new TH1D(name, title, nbins, xlow, xhigh);
+  for(int i=0;i<nbins;i++){
+    hh->SetBinContent(i, gr->Eval(hh->GetBinLowEdge(i)));
+  }
+  return hh;
+}
+
 int RUtil::fillZeroCrossHist(TGraph * inGr, TH1D* hist, double weight, double threshold){
   double val=0., nextVal=0.;
   double lastVal=0.;
@@ -1751,6 +1852,16 @@ TGraph * RUtil::add(TGraph *g1, TGraph *g2, double constant){
   return outGr;
 }
 
+int RUtil::add(double *result, int N, double *x, double *y, double constant){
+
+  int len=N;
+
+  for(int i=0;i<len;i++){
+    result[i]=x[i]+(y[i]*constant);
+  }
+  return 1;
+}
+
 TGraph2D * RUtil::add(TGraph2D *g1, TGraph2D *g2, double constant){
 
   int len=g1->GetN()<g2->GetN()?g1->GetN():g2->GetN();
@@ -1764,11 +1875,32 @@ TGraph2D * RUtil::add(TGraph2D *g1, TGraph2D *g2, double constant){
   return outGr;
 }
 
+TGraph * RUtil::fmodGraph(TGraph *g, double mod){
+  auto y=g->GetY();
+  TGraph *outGr=new TGraph(g->GetN());  
+  for(int i=0;i<g->GetN();i++){
+    outGr->SetPoint(i, g->GetX()[i], fmod(g->GetY()[i], mod));
+  }
+  return outGr;
+}
+
 double RUtil::dot(TGraph *g1, TGraph *g2){
   auto x = g1->GetY();
   auto y = g2->GetY();
   double num=0., xdenom=0., ydenom=0.;
   auto n=g1->GetN()<g2->GetN()?g1->GetN():g2->GetN();
+  for(int i=0;i<n;i++){
+    num+=(x[i])*(y[i]);
+    xdenom+=pow(x[i], 2);
+    ydenom+=pow(y[i], 2);
+  }
+  return num/sqrt(xdenom*ydenom);
+  
+}
+
+double RUtil::dot(double * x, double *y, int N){
+  auto n=N;
+  double num=0., xdenom=0., ydenom=0.;
   for(int i=0;i<n;i++){
     num+=(x[i])*(y[i]);
     xdenom+=pow(x[i], 2);
@@ -1801,6 +1933,26 @@ TGraph * RUtil::mult(TGraph *g1, TGraph *g2, double constant){
   TGraph *outGr=new TGraph(len);  
   for(int i=0;i<len;i++){
     outGr->SetPoint(i, g1->GetX()[i], g1->GetY()[i]*(constant*g2->Eval(g1->GetX()[i])));
+  }
+  outGr->GetXaxis()->SetTitle(g1->GetXaxis()->GetTitle());
+  outGr->GetYaxis()->SetTitle(g1->GetYaxis()->GetTitle());
+
+  return outGr;
+}
+
+TGraph2D * RUtil::multComplex(TGraph2D *g1, TGraph2D *g2){
+
+  int len=g1->GetN()<=g2->GetN()?g1->GetN():g2->GetN();
+  TGraph2D *outGr=new TGraph2D(len);  
+  for(int i=0;i<len;i++){
+    auto x1=g1->GetX()[i];
+    auto y1=g1->GetY()[i];
+    auto z1=g1->GetZ()[i];
+    auto y2=g2->GetY()[i];
+    auto z2=g2->GetZ()[i];
+    auto y3=y1*y2 - z1*z2;
+    auto z3=y1*z2 + z1*y2;
+    outGr->SetPoint(i, x1, y3, z3);
   }
   outGr->GetXaxis()->SetTitle(g1->GetXaxis()->GetTitle());
   outGr->GetYaxis()->SetTitle(g1->GetYaxis()->GetTitle());
@@ -1857,6 +2009,15 @@ TGraph * RUtil::scale(TGraph *g1, double factor){
   outGr->GetYaxis()->SetTitle(g1->GetYaxis()->GetTitle());
 
   return outGr;
+  
+}
+
+int RUtil::scale(double * result, int N, double *input, double factor){
+  for(int i=0;i<N;i++){
+    result[i]=input[i]*factor;
+
+  }
+  return 1;
   
 }
 
@@ -2297,6 +2458,7 @@ TGraph * RUtil::delayGraph(TGraph *ingr, double delay){
   return dg;
 }
 
+
 int RUtil::delayGraph(TGraph *ingr, TGraph *outgr, double delay){
   double*xx=ingr->GetX();
   double xxout[ingr->GetN()];
@@ -2316,6 +2478,38 @@ int RUtil::delayGraph(TGraph *ingr, TGraph *outgr, double delay){
   return 1;
 }
 
+int RUtil::roll(double * result, double * vals, int N, int rollN){
+  if(rollN>=N)rollN=rollN-N;
+  if(rollN<0)rollN=N+rollN;
+  for(int i=0;i<N;i++){
+    int ind=i+rollN;
+    if(ind>=N){
+      ind=ind-N;
+    }
+    if(ind<0){
+      ind=N+ind;
+    }
+    result[i]=vals[ind];
+
+  }
+
+  return rollN;
+}
+
+TGraph * RUtil::wrap(TGraph *g, double low, double high){
+  auto outGr=new TGraph(g->GetN());
+  for(int i=0;i<g->GetN();i++){
+    double point=g->GetY()[i];
+    if(point<low){
+      point=high-(low-point);
+    }
+    if(point>high){
+      point=low+(point-high);
+  }
+    outGr->SetPoint(i, g->GetX()[i], point);
+  }
+  return outGr;
+}
 
 TH1F * RUtil::plotResiduals(TGraph *gr1, TGraph *gr2, int nbins, double min, double max){
   TH1F *hist =new TH1F("", "", nbins,min, max);
@@ -2439,6 +2633,128 @@ TGraph * RUtil::crossCorrelateWindowed(TGraph * gr1, TGraph * gr2, TGraph *grWin
   
   TGraph *outt = new TGraph(outx.size(), &outx[0], &out[0]);
 
+  return outt;
+}
+
+TGraph * RUtil::crossAdd(TGraph * gr1, TGraph * gr2, double max_delay, double t_low, double t_high){
+  double *x = gr1->GetY();
+  double *time=gr1->GetX();
+  double *y = gr2->GetY();
+  int yn=gr1->GetN();
+  int xn=gr2->GetN();
+
+  int lengthx=xn;
+  int lengthy=yn;
+  int length=0;
+  vector<double> out, outx, outy;
+  double num, ynum, xdenom, ydenom, denom;
+  double timescale = time[1]-time[0];
+
+  length=lengthx<=lengthy?xn:yn;
+  length=lengthx<=lengthy?xn:yn;
+  double throwaway=time[xn-1]/10.;//throw away highest delays, they are unstable
+  max_delay=max_delay>time[xn-1]?time[xn-1]-throwaway:max_delay;
+
+
+  t_high=t_high>=time[xn-1]?time[xn-1]:t_high;
+  t_low=t_low<time[0]?time[0]:t_low;
+
+  int max_delay_index=(1./timescale)*max_delay;
+  double mx=0;
+  double my=0;
+
+  int n=0;
+  double t=-max_delay;
+  for(int n=-max_delay_index;n<max_delay_index;n++){
+    //if(time[d]>=-max_delay&&time[d]<=max_delay){
+      num=0.;
+      xdenom=0.;
+      ydenom=0.;
+      for(int i=0;i<length;i++){
+	if((i+n)>0 && (i+n)<length && time[i]>=t_low && time[i]<=t_high){
+	  
+	  num+=abs(x[i]-mx)+abs(y[i+n]-my);
+	  xdenom+=pow(x[i]-mx, 2);
+	  ydenom+=pow(y[i+n]-my, 2);
+	  
+	}
+      }
+      out.push_back(num/sqrt(xdenom+ydenom));
+      //      outx.push_back(time[(length/2)+n]);
+      outx.push_back((double)n *timescale);
+      //    n++;    
+    }
+
+
+
+  
+  TGraph *outt = new TGraph(outx.size(), &outx[0], &out[0]);
+  outt->GetXaxis()->SetTitle("offset (ns)");
+  outt->GetYaxis()->SetTitle("CC coefficient");
+  outt->GetYaxis()->SetTitleOffset(1.15);
+  outt->SetTitle("");
+  outt->GetXaxis()->SetRangeUser(-max_delay, max_delay);
+  return outt;
+}
+
+TGraph * RUtil::crossSubtract(TGraph * gr1, TGraph * gr2, double max_delay, double t_low, double t_high){
+  double *x = gr1->GetY();
+  double *time=gr1->GetX();
+  double *y = gr2->GetY();
+  int yn=gr1->GetN();
+  int xn=gr2->GetN();
+
+  int lengthx=xn;
+  int lengthy=yn;
+  int length=0;
+  vector<double> out, outx, outy;
+  double num, ynum, xdenom, ydenom, denom;
+  double timescale = time[1]-time[0];
+
+  length=lengthx<=lengthy?xn:yn;
+  length=lengthx<=lengthy?xn:yn;
+  double throwaway=time[xn-1]/10.;//throw away highest delays, they are unstable
+  max_delay=max_delay>time[xn-1]?time[xn-1]-throwaway:max_delay;
+
+
+  t_high=t_high>=time[xn-1]?time[xn-1]:t_high;
+  t_low=t_low<time[0]?time[0]:t_low;
+
+  int max_delay_index=(1./timescale)*max_delay;
+  double mx=0;
+  double my=0;
+
+  int n=0;
+  double t=-max_delay;
+  for(int n=-max_delay_index;n<max_delay_index;n++){
+    //if(time[d]>=-max_delay&&time[d]<=max_delay){
+      num=0.;
+      xdenom=0.;
+      ydenom=0.;
+      for(int i=0;i<length;i++){
+	if((i+n)>0 && (i+n)<length && time[i]>=t_low && time[i]<=t_high){
+	  
+	  num+=(x[i]-mx)-(y[i+n]-my);
+	  xdenom+=pow(x[i]-mx, 2);
+	  ydenom+=pow(y[i+n]-my, 2);
+	  
+	}
+      }
+      out.push_back(num);///sqrt(xdenom+ydenom));
+      //      outx.push_back(time[(length/2)+n]);
+      outx.push_back((double)n *timescale);
+      //    n++;    
+    }
+
+
+
+  
+  TGraph *outt = new TGraph(outx.size(), &outx[0], &out[0]);
+  outt->GetXaxis()->SetTitle("offset (ns)");
+  outt->GetYaxis()->SetTitle("CC coefficient");
+  outt->GetYaxis()->SetTitleOffset(1.15);
+  outt->SetTitle("");
+  outt->GetXaxis()->SetRangeUser(-max_delay, max_delay);
   return outt;
 }
 
@@ -2647,9 +2963,34 @@ TGraph * RUtil::zeros(double start, double stop, int len){
   return og;
 }
 
+TGraph * RUtil::ones(int len, double dt){
+  auto og=new TGraph(len);
+  for(int i=0;i<len;i++){
+    og->SetPoint(i, (double)i*dt, 1.);
+  }
+  return og;
+}
+
+TGraph * RUtil::ones(double start, double stop, int len){
+  double dx=(stop-start)/len;
+  auto og=new TGraph(len);
+  for(int i=0;i<len;i++){
+    og->SetPoint(i, start+(double)i*dx, 1.);
+  }
+  return og;
+}
+
+int RUtil::fillCWArray(double * arr, int N, double freq, double amp, double dt, double phase){
+  double t=0.;
+  for(int i=0;i<N;i++){
+    arr[i]=amp*sin(2.*pi*freq*t +phase);
+    t+=dt;
+  }
+  return N; 
+}
 
 TGraph * RUtil::makeCW(double freq,  double amp, double t_min, double t_max, double GSs, double phase){
-
+  
   int n=(t_max-t_min)*GSs;
   TGraph * oG=new TGraph();
   double dt=1./GSs;
@@ -2815,6 +3156,39 @@ TGraph * RUtil::brickWallFilter(TGraph * inGr, double low, double high){
   auto outGr=(TGraph*)RUtil::FFT::ifft(fT)->Clone();
   return outGr;
 }
+
+TGraph * RUtil::removeCW(TGraph *ingr, double freq){
+  double * y=ingr->GetY();
+  double * x=ingr->GetX();
+  double dt=x[1]-x[0];
+  int N=ingr->GetN();
+  double sine[N];
+  double cosine[N];
+  double sine_normalized[N];
+  double cosine_normalized[N];
+  double y_normalized[N];
+  RUtil::fillCWArray(sine, N,freq, 1, dt,0);
+  RUtil::fillCWArray(cosine, N,freq, 1,dt, RUtil::deg2Rad(90));
+  auto norm_of_y=RUtil::normalize(y_normalized,N,  y);
+  RUtil::normalize(sine_normalized, N, sine);
+  RUtil::normalize(cosine_normalized, N, cosine);
+  auto coef0=RUtil::dot(y_normalized, sine_normalized, N);
+  auto coef1=RUtil::dot(y_normalized, cosine_normalized, N);
+  double y_temp0[N];
+  double y_temp1[N];
+  double result[N];
+  double sine_scaled[N];
+  double cosine_scaled[N];
+  RUtil::scale(sine_scaled, N, sine_normalized, coef0);
+  RUtil::scale(cosine_scaled, N, cosine_normalized, coef1);
+  RUtil::add(y_temp0,N, y_normalized, sine_scaled, -1);
+  RUtil::add(y_temp1,N, y_temp0, cosine_scaled, -1);
+  RUtil::scale(result,N, y_temp1, norm_of_y);
+  auto gr=new TGraph(N, RUtil::makeIndices(N,dt), result);
+  return gr;
+  
+}
+
 
 TGraph * RUtil::addNoise(TGraph * inGr, double level, TString type){
   //  cout<<type<<endl;
@@ -3438,7 +3812,7 @@ vector<double> RUtil::linspace(double start, double stop, int N){
   auto dt=(stop-start)/(double)N;
   auto vec=vector<double>(N);
   for(int i=0;i<N;i++){
-    vec[i]=(double)i*dt;
+    vec[i]=start+(double)i*dt;
   }
   return vec;
 }
@@ -4017,6 +4391,29 @@ TGraph * RUtil::zeroPad(TGraph *inGr, int num, int whichEnd){
   return outGr;
 }
 
+TGraph2D * RUtil::zeroPad(TGraph2D *inGr, int num, int whichEnd){
+  auto dt=inGr->GetX()[1]-inGr->GetX()[0];
+  auto outGr=(TGraph2D*)inGr->Clone();
+  auto lastt=inGr->GetX()[inGr->GetN()-1];
+  if(whichEnd==1){
+    for(int i=0;i<num;i++){
+      outGr->SetPoint(outGr->GetN(), lastt+((double)i*dt), 0.,0.);
+    }
+  }
+  else {
+    auto tempGr=new TGraph2D(inGr->GetN()+num);
+    auto firstt=inGr->GetX()[0];
+    auto t0=firstt-(num*dt);
+    for(int i=num;i<tempGr->GetN();i++){
+      tempGr->SetPoint(i, outGr->GetX()[i-num], outGr->GetY()[i-num], outGr->GetZ()[i-num]);
+    }
+    for(int i=0;i<num;i++){
+      tempGr->SetPoint(i, t0+(double)i*dt, 0.,0.);
+    }
+    return tempGr;
+  }
+  return outGr;
+}
 
 double RUtil::distance3(TVector3 one, TVector3 two){
   return abs((one-two).Mag());
@@ -4338,4 +4735,93 @@ TGraph * RUtil::demod::envelopeDetectorFritschEQ11(TGraph * ingr, double fc){
   }
   return outgr;
     
+}
+
+
+TH2D * RUtil::wavelet::simpleWaveletTransform(TGraph *gr1, int order, int width){
+  auto len=gr1->GetN();
+  auto dt=gr1->GetX()[1]-gr1->GetX()[0];
+  auto Fs=1./dt;
+  auto og=new TH2D("wavelet", "wavelet", len, gr1->GetX()[0], gr1->GetX()[len-1],len/2-1, 0, Fs/2);
+
+
+  auto centerF=RUtil::linspace(0,Fs/2., order);
+  // auto wavelet=new TGraph();
+  //auto conv=new TGraph();
+
+  for(int i=1;i<order;i++){
+  
+    auto wavelet=RUtil::wavelet::morlet(centerF[i], len, width, dt);
+    //    cout<<centerF[i]<<endl;
+    auto conv=RUtil::FFT::convolve(gr1,wavelet);
+    auto waveletFFT=(TGraph2D*)fXfrmGr2D->Clone();
+    waveletFFT->SetName("waveletFFT");
+    auto hilbb=RUtil::FFT::hilbertEnvelope(conv);
+    for(int j=0;j<len;j++){
+      for(int k=0;k<len/2-1;k++){
+	auto zz=waveletFFT->GetZ()[k];
+	auto yy=waveletFFT->GetY()[k];
+	og->Fill(conv->GetX()[j], 2.*waveletFFT->GetX()[k],abs(hilbb->GetY()[j])*sqrt(zz*zz+yy*yy));
+	//auto val=hilbb->GetY()[k];
+	//og->Fill(conv->GetX()[j], conv->GetX()[k],val);
+      
+      // og->SetBinContent(j,i,abs(conv->GetY()[j])*sqrt(fXfrmGr2D->GetY()[j]*fXfrmGr2D->GetY()[j] + fXfrmGr2D->GetZ()[j]*fXfrmGr2D->GetZ()[j]));
+      }
+    }
+     delete conv;
+     delete waveletFFT;
+     delete hilbb;
+     delete wavelet;
+  }
+  
+  return og;
+}
+
+TH2D * RUtil::wavelet::simpleSuperletTransform(TGraph *gr1, int order, int width, int super){
+  auto len=gr1->GetN();
+  auto dt=gr1->GetX()[1]-gr1->GetX()[0];
+  auto Fs=1./dt;
+  auto og=new TH2D("superlet", "superlet", len, gr1->GetX()[0], gr1->GetX()[len-1],len/2-1, 0, Fs/2);
+
+
+  auto centerF=RUtil::linspace(0,Fs/2., order);
+
+  auto superW=RUtil::linspace(width/(super-1), width*(super-1), super);
+
+  for(int i=1;i<order;i++){
+    for(int l=0;l<super;l++){
+      auto wavelet=RUtil::wavelet::morlet(centerF[i], len, superW[l], dt);
+
+      auto conv=RUtil::FFT::convolve(gr1,wavelet);
+      auto waveletFFT=(TGraph2D*)fXfrmGr2D->Clone();
+      waveletFFT->SetName("waveletFFT");
+      auto hilbb=RUtil::FFT::hilbertEnvelope(conv);
+      for(int j=0;j<len;j++){
+	for(int k=0;k<len/2-1;k++){
+	  auto zz=waveletFFT->GetZ()[k];
+	  auto yy=waveletFFT->GetY()[k];
+	  auto binx=og->GetXaxis()->FindBin(conv->GetX()[j]);
+	  auto biny=og->GetYaxis()->FindBin(2.*waveletFFT->GetX()[k]);
+	  auto binxy=og->FindBin(conv->GetX()[j],2.*waveletFFT->GetX()[k]);
+	  auto temp=og->GetBinContent(binx,biny);
+	  auto currVal=temp>0?temp:1.;
+	  og->Fill(conv->GetX()[j], 2.*waveletFFT->GetX()[k], abs(hilbb->GetY()[j])*sqrt(zz*zz+yy*yy));
+	  //og->SetBinContent(binx,biny, ((hilbb->GetY()[j])*sqrt(zz*zz+yy*yy)+currVal));
+	}
+      }
+      delete conv;
+      delete waveletFFT;
+      delete hilbb;
+      delete wavelet;
+    }
+  }
+  return og;
+}
+
+TGraph* RUtil::wavelet::morlet(double centerF, int length, int width, double dt){
+  auto  cw=RUtil::makeCW(centerF, 1., 0, length, 1./dt, RUtil::pi/2);
+  auto centerT=cw->GetX()[cw->GetN()/2];
+  auto windowedCW=RUtil::applyWindow(cw, centerT-width, centerT+width, 3);
+  delete cw;
+  return windowedCW;
 }

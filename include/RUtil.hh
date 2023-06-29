@@ -270,6 +270,8 @@ utilities.
   TGraph * interpolateGraph(TGraph * inGraph, int N, double* times);
   //normalize a graph
   TGraph * normalize(TGraph *inGr);
+  //normalize an array, put the result in 'result'
+  double normalize(double * result, int N, double *input);
   //normalize to peak
   TGraph * normToPeak(TGraph *inGr);
   //normalize a 2d graph
@@ -299,6 +301,9 @@ utilities.
   //same as above but allows you to supply a window function, to only
   //correlate parts of the graph that you want.
   TGraph * crossCorrelateWindowed(TGraph * gr1, TGraph * gr2, TGraph *wingraph, double max_delay=999999., double t_low=0., double t_high=999999.);
+  //this is a cross correlation but with addition rather than multiplication.
+  TGraph * crossAdd(TGraph * gr1, TGraph * gr2, double max_delay=999999., double t_low=0., double t_high=999999.);
+  TGraph * crossSubtract(TGraph * gr1, TGraph * gr2, double max_delay=999999., double t_low=0., double t_high=999999.);
   //the same as the crossCorrelate() function, but returns gr2 shifted in time
   //to the point of peak cross correlation with gr1.
   TGraph * align(TGraph * gr1, TGraph * gr2, double max_delay=999999., double t_low=0., double t_high=999999.);
@@ -322,6 +327,10 @@ utilities.
   TGraph *delayGraph(TGraph *ingr, double delay);
   //same but with no mem usage.
   int delayGraph(TGraph * ingr, TGraph *outgr, double delay);
+  //roll an array by rollN values
+  int roll(double *result, double *vals, int N, int rollN);
+  //wrap values on an interval
+  TGraph * wrap(TGraph *g, double low, double high);
   //plot \Delta(gr1[i], gr2[i]) for each graph point i
   TH1F * plotResiduals(TGraph *gr1, TGraph *gr2, int nbins=40, double min=1, double max=-1);
   //average some graphs
@@ -332,12 +341,18 @@ utilities.
   //add 2 TGraphs. if constant is -1, they are subtracted.
   TGraph * add(TGraph * g1, TGraph * g2, double constant=1.);
   TGraph2D * add(TGraph2D * g1, TGraph2D * g2, double constant=1.);
+  int add(double *result, int N, double *x, double *y, double constant=1.);
+  //elementwise fmod;
+  TGraph * fmodGraph(TGraph *g, double mod);
   //dot product of 2 graphs
   double dot(TGraph *g1, TGraph *g2);
+  double dot(double * x, double *y, int N);
   double dot(TGraph *g1, TGraph *g2, double tLow, double tHigh);
   //multiply two graphs: out(t)=g1(t)*consant*g2(t)
   TGraph * mult(TGraph *g1, TGraph *g2, double constant=1.);
-  //divide 2 graphs: out(t)=g1(t)/constant*g2(t). if there is a divide
+  //multiply to TGraph2Ds. must be the same number of entries.
+  TGraph2D * multComplex(TGraph2D *g1, TGraph2D *g2);
+    //divide 2 graphs: out(t)=g1(t)/constant*g2(t). if there is a divide
   //by zero, that entry will just be 0.
   TGraph * divide(TGraph *g1, TGraph *g2, double constant=1.);
   //same but with vectors. must be the same length.
@@ -350,6 +365,8 @@ utilities.
   TGraph * shiftX(TGraph *g1, double factor);
   //scale a TGraph by a constant factor
   TGraph * scale(TGraph *g1, double factor);
+    //scale an array by a constant factor, put result in 'result'
+  int scale(double * result, int N, double *input, double factor);
   //stretch a TGraph in time by a factor
   TGraph *stretch(TGraph *g1, double factor);
   //find the mean of a TGraph. range is optional
@@ -392,7 +409,7 @@ utilities.
   int squareHist(TH2D *inGr);
   //remove the mean of a TGraph. range to compute the mean over is optional.
   //the mean computed within a sub-range will be removed from the full graph.
-  TGraph * removeMean(TGraph *gr, double t_low=0., double t_high=999999.);
+  TGraph * removeMean(TGraph *gr, double t_low=0., double t_high=9.e99);
   //flip an array ([0]=[n-1]) (NOT WORKING)
   double * flip(int n, double * in);
   //flip a graph
@@ -405,8 +422,13 @@ utilities.
   TGraph * zeros(int len, double dt);
   //make an empty tgraph with start, stop, and number of points
   TGraph *zeros(double start, double stop, int len);
+  //make a tgraph filled with ones with some time resolution dt
+  TGraph * ones(int len, double dt);
+  //make a tgraph filled with ones start, stop, and number of points
+  TGraph *ones(double start, double stop, int len);
   //make CW with given parameters.
   TGraph * makeCW(double freq,  double amp, double t_min=0., double t_max=1000., double GSs=20., double phase=0.);
+  int fillCWArray(double * array, int N, double freq, double amp, double dt, double phase);
   //sample CW at the given times
   TGraph * sampledCW(double freq,  double amp, int N, double * times, double phase);
   TGraph * sampledCW(double freq,  double amp, vector<double> times, double phase);
@@ -440,6 +462,8 @@ utilities.
   TGraph * bandpassFilter(TGraph *ingr, double low, double high);
   //a brick wall frequency domain filter
   TGraph * brickWallFilter(TGraph *ingr, double low, double high);
+  //remove CW at a given frequency
+  TGraph * removeCW(TGraph *ingr, double freq);
     //will take the first chunk of the signal graph (equal to to t_high-t_low)
   vector<double> linspace(double start, double stop, int N);
   // return the value of a window over sample numbers n. types are:
@@ -486,7 +510,8 @@ utilities.
   int fillZeroCrossHist(TGraph * inGr, TH1D* hist, double weight=1., double threshold=0.);
   //fill a histogram with an array
   TH1F * histogram(TGraph *gr, int nbins=20, TString title="hist", TString name="hist");
-
+  //turn a tgraph into a histo
+  TH1D * toHistogram(TGraph*gr, int nbins=10, TString title="hist", TString name="hist");
   //get the time of the first threshold crossing after after, rising or falling
   double getFirstThresholdCrossing(TGraph *inGr, double thresh, double after=0., int rising=1);
     //get the time of the last threshold crossing after after, rising or falling
@@ -572,6 +597,7 @@ utilities.
   TGraph * evenSample(TGraph *inGr, double dt);
   //zero pad a tgraph. requires an evenly sampled tgraph.
   TGraph * zeroPad(TGraph *inGr, int num, int whichEnd=1);
+  TGraph2D * zeroPad(TGraph2D *inGr, int num, int whichEnd=1);
   //get the distance between tvectors
   double distance3(TVector3 one, TVector3 two);
   //get the distance from one vector to several others
@@ -616,8 +642,10 @@ The FFT namespace, for everything to do with FFTs.
     //sine transform
     TGraph * sineTransform(TGraph * inGr);
     double * sineTransform(int n, double * in);
-
+    TGraph * convolve(TGraph *inGr1, TGraph *inGr2);
     void fftshift(int N, complex<double>* in);
+    void fftshift(TGraph2D * in);
+    void fftshift(TGraph * in);
     //return the Hilbert transform
     TGraph * hilbertTransform(TGraph *inGr);
     //plot the phase of the full graph 
@@ -746,7 +774,12 @@ the SVD namespace, which has useful utilities for SVD filtration methods
     TGraph * envelopeDetectorFritschEQ11(TGraph * ingr, double fc);
     TGraph * envelopeDetectorFritschEQ14(TGraph * ingr, double fc, int N);
   }
+
+  namespace wavelet{
+    TH2D * simpleWaveletTransform(TGraph *gr1, int order, int width);
+    TH2D * simpleSuperletTransform(TGraph *gr1, int order, int width, int super=3);
+    TGraph* morlet(double centerF, int length, int width, double dt);
+  }
+
 }
-
-
 #endif
