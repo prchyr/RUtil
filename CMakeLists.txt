@@ -1,12 +1,4 @@
-# $Id: CMakeLists.txt 100923 2016-11-03 10:50:34Z gcosmo $
 
-#
-
-
-
-#----------------------------------------------------------------------------
-# Setup the project
-#
 cmake_minimum_required(VERSION 2.8.10 FATAL_ERROR)
 project(t576)
 
