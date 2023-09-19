@@ -1650,8 +1650,7 @@ double RUtil::rms(TGraph * gr, double t_low, double t_high){
 double RUtil::rms(int N, double *data){
   double rms=0.;
   for(int i=0;i<N;i++){
-      rms+=(data[i]*data[i]);
-    }
+    rms+=(data[i]*data[i]);
   }
   return sqrt(rms/N);
 }
