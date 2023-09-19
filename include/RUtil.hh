@@ -329,8 +329,11 @@ utilities.
   int delayGraph(TGraph * ingr, TGraph *outgr, double delay);
   //roll an array by rollN values
   int roll(double *result, double *vals, int N, int rollN);
+  //roll a tgraph, returning a new tgraph.
+  TGraph* roll(TGraph * inGr, int rollN);
   //wrap values on an interval
   TGraph * wrap(TGraph *g, double low, double high);
+  double wrap(double inval, double low, double high);
   //plot \Delta(gr1[i], gr2[i]) for each graph point i
   TH1F * plotResiduals(TGraph *gr1, TGraph *gr2, int nbins=40, double min=1, double max=-1);
   //average some graphs
@@ -436,7 +439,10 @@ utilities.
   double integrate(TGraph * gr, double t_low=0, double t_high=999999.); //get the sum
   double sumGraph(TGraph * gr, double t_low=0, double t_high=999999.);
   //get the RMS
+  //this one uses a tgraph and you can pick a time range
   double rms(TGraph * gr, double t_low, double t_high);
+  //this one uses an array of length N and gets the RMS for the full thing.
+  double rms(int N, double * data);
   //get the power
   double avgPower(TGraph *gr, double t_low, double t_high);
   //get the amplitude

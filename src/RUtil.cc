@@ -1534,7 +1534,7 @@ int RUtil::getIndex(TGraph2D * gr, double t){
   //   //}
   // }
   
-  //return index;
+  return 0;
 }
 
 double RUtil::snr(TGraph *gr, double noiseStart, double noiseEnd){
@@ -1645,6 +1645,15 @@ double RUtil::rms(TGraph * gr, double t_low, double t_high){
     }
   }
   return sqrt(rms/n);
+}
+
+double RUtil::rms(int N, double *data){
+  double rms=0.;
+  for(int i=0;i<N;i++){
+      rms+=(data[i]*data[i]);
+    }
+  }
+  return sqrt(rms/N);
 }
 
 double RUtil::amplitude(TGraph * gr, double t_low, double t_high){
@@ -2496,17 +2505,30 @@ int RUtil::roll(double * result, double * vals, int N, int rollN){
   return rollN;
 }
 
+TGraph* RUtil::roll(TGraph * inGr, int rollN){
+  double vals[inGr->GetN()];
+  RUtil::roll(vals, inGr->GetY(), inGr->GetN(), rollN);
+  auto outGr=new TGraph(inGr->GetN(), inGr->GetX(), vals);
+  return outGr;
+}
+
+double RUtil::wrap(double inval, double low, double high){
+  double val=inval;
+  if(val<low){
+    val=high-(low-val);
+  }
+  if(val>high){
+    val=low+(val-high);
+  }
+  return val;
+ 
+}
 TGraph * RUtil::wrap(TGraph *g, double low, double high){
   auto outGr=new TGraph(g->GetN());
   for(int i=0;i<g->GetN();i++){
     double point=g->GetY()[i];
-    if(point<low){
-      point=high-(low-point);
-    }
-    if(point>high){
-      point=low+(point-high);
-  }
-    outGr->SetPoint(i, g->GetX()[i], point);
+
+    outGr->SetPoint(i, g->GetX()[i], RUtil::wrap(point, low, high));
   }
   return outGr;
 }
@@ -3160,7 +3182,7 @@ TGraph * RUtil::brickWallFilter(TGraph * inGr, double low, double high){
 TGraph * RUtil::removeCW(TGraph *ingr, double freq){
   double * y=ingr->GetY();
   double * x=ingr->GetX();
-  double dt=x[1]-x[0];
+  double dt=x[10]-x[9];
   int N=ingr->GetN();
   double sine[N];
   double cosine[N];
