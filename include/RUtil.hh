@@ -377,7 +377,23 @@ utilities.
   //get the 'peakiness' of a graph
   double peakiness(TGraph *inGr);
   //get the max value (wrapper of TMath::max)
-  double max(TGraph *gr);
+    double max(TGraph *gr);
+ 
+  template <typename T>  T max(int N, T * dat){
+
+    auto max=TMath::MaxElement(N, dat);
+    
+    return max;
+  }
+
+  template <typename T> T maxInRange(int N, T * dat, int low, int high){
+    int range=high-low;
+    T dat_range[range];
+    for(int i=low;i<high;i++){
+      dat_range[i-low]=dat[i];
+    }
+    return TMath::MaxElement(range,dat_range);
+  }
   double maxInRange(TGraph *gr, double t_low=0., double t_high=999999.);
   //get the x-axis location of t max value (wraper of TMath::LocMax)
   double locMax(TGraph *gr);
@@ -438,6 +454,36 @@ utilities.
   //integrate a TGraph. lower and upper bounds are optional.
   double integrate(TGraph * gr, double t_low=0, double t_high=999999.); //get the sum
   double sumGraph(TGraph * gr, double t_low=0, double t_high=999999.);
+  template <typename T> double sum(T * data, int index_low, int index_high){
+  if(index_low>index_high){
+    return 0;
+  }
+  double sum=0;
+  for(int i=index_low;i<index_high;i++){
+    sum+=(double)data[i];
+  }
+  return sum;
+}
+    template <typename T> double sumAbs(T * data, int index_low, int index_high){
+  if(index_low>index_high){
+    return 0;
+  }
+  double sum=0;
+  for(int i=index_low;i<index_high;i++){
+    sum+=(double)abs(data[i]);
+  }
+  return sum;
+}
+      template <typename T> double sumPower(T * data, int index_low, int index_high){
+  if(index_low>index_high){
+    return 0;
+  }
+  double sum=0;
+  for(int i=index_low;i<index_high;i++){
+    sum+=(double)data[i]*(double)data[i];
+  }
+  return sum/50.;
+}
   //get the RMS
   //this one uses a tgraph and you can pick a time range
   double rms(TGraph * gr, double t_low, double t_high);

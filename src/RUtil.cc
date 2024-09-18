@@ -630,8 +630,8 @@ TGraph* RUtil::FFT::peakFreqGraph(TGraph *gr, Int_t binsize , Int_t overlap, Int
       
       outt=RUtil::FFT::psd(in,0, samprate/2.);
       
-      auto max=RUtil::maxInRange(outt, 0, 3);
-      if(timeH>lasttimeH && max>thresh){
+      auto maxx=RUtil::maxInRange(outt, 0, 3);
+      if(timeH>lasttimeH && maxx>thresh){
 	outGr->SetPoint(outGr->GetN(), timeH, RUtil::locMaxInRange(outt, 0, 3.));
 	}
       lasttimeH=timeH;
@@ -1432,23 +1432,30 @@ double RUtil::maxInRange(TGraph *gr, double t_low, double t_high){
   t_low=t_low<gr->GetX()[0]?gr->GetX()[0]:t_low;
   t_high=t_high>gr->GetX()[N-1]?gr->GetX()[N-1]:t_high;
   auto graph=RUtil::getChunkOfGraph(gr, t_low, t_high);
-  auto max=TMath::MaxElement(graph->GetN(), graph->GetY());
+  auto maxx=TMath::MaxElement(graph->GetN(), graph->GetY());
   delete graph;
-  return max;
+  return maxx;
 }
 
 double RUtil::max(TGraph *gr){
 
-  auto max=TMath::MaxElement(gr->GetN(), gr->GetY());
+  auto maxx=TMath::MaxElement(gr->GetN(), gr->GetY());
   
-  return max;
+  return maxx;
 }
+// double RUtil::max(int N, double * dat){
+
+//   auto max=TMath::MaxElement(N, dat);
+  
+//   return max;
+// }
+
 
 double RUtil::locMax(TGraph *gr){
 
-  auto max=gr->GetX()[TMath::LocMax(gr->GetN(), gr->GetY())];
+  auto maxx=gr->GetX()[TMath::LocMax(gr->GetN(), gr->GetY())];
   
-  return max;
+  return maxx;
 }
 double RUtil::locMaxInRange(TGraph *gr, double t_low, double t_high){
   auto data=gr->GetY();
@@ -1457,9 +1464,9 @@ double RUtil::locMaxInRange(TGraph *gr, double t_low, double t_high){
   t_low=t_low<gr->GetX()[0]?gr->GetX()[0]:t_low;
   t_high=t_high>gr->GetX()[N-1]?gr->GetX()[N-1]:t_high;
   auto graph=RUtil::getChunkOfGraph(gr, t_low, t_high);
-  auto max=graph->GetX()[TMath::LocMax(graph->GetN(), graph->GetY())];
+  auto maxx=graph->GetX()[TMath::LocMax(graph->GetN(), graph->GetY())];
   delete graph;  
-  return max;
+  return maxx;
 }
 
 
@@ -1601,6 +1608,17 @@ double RUtil::sumGraph(TGraph *gr, double t_low, double t_high){
   return sum;
 
 }
+
+// template <typename T> double RUtil::sum(T * data, int index_low, int index_high){
+//   if(index_low>index_high){
+//     return 0;
+//   }
+//   double sum=0;
+//   for(int i=index_low;i<index_high;i++){
+//     sum+=(double)data[i];
+//   }
+//   return sum;
+// }
 double RUtil::integrate(TGraph * gr, double t_low, double t_high){
   t_low=t_low>0.?t_low:0.;
   t_high>gr->GetX()[gr->GetN()-1]?gr->GetX()[gr->GetN()-1]:t_high;
@@ -2532,8 +2550,8 @@ TGraph * RUtil::wrap(TGraph *g, double low, double high){
   return outGr;
 }
 
-TH1F * RUtil::plotResiduals(TGraph *gr1, TGraph *gr2, int nbins, double min, double max){
-  TH1F *hist =new TH1F("", "", nbins,min, max);
+TH1F * RUtil::plotResiduals(TGraph *gr1, TGraph *gr2, int nbins, double min, double maxx){
+  TH1F *hist =new TH1F("", "", nbins,min, maxx);
   for(int i=0;i<gr1->GetN();i++)hist->Fill(gr1->GetY()[i]-gr2->GetY()[i]);
   hist->SetLineWidth(3);
   return hist;
