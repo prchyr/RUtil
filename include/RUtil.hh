@@ -242,7 +242,7 @@ utilities.
   //volts to dbm/Ghz
   double vToDbmGHz(double bandwidthGSs, double re, double im=0);
   //make an axis with linearly increasing values.
-  double * makeIndices(int n, double step, double offset=0);
+  //  double * makeIndices(int n, double step, double offset=0);
   //assign an array of offsets to the x axis of a graph. both must be the same length
   int assignXOffset(TGraph *inGr, double * offsets, double constant=1.);
   //the normalized sinc function: sin(pi x)/(pi x)
@@ -378,7 +378,15 @@ utilities.
   double peakiness(TGraph *inGr);
   //get the max value (wrapper of TMath::max)
     double max(TGraph *gr);
- 
+  template <typename T>  T * makeIndices(int N, T step, T offset=0){
+
+    T *out=new T[N];
+    for(int i=0;i<N;i++){
+      out[i]=((T)i*step+offset);
+    }
+    return out;
+  }
+  
   template <typename T>  T max(int N, T * dat){
 
     auto max=TMath::MaxElement(N, dat);

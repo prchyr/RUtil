@@ -1215,13 +1215,13 @@ make a new tgraph that you'll need to delete on your own.
 //   for(int i=0;i<this->GetN();i++)this->GetY()[i]*=a;
 // }
 
-double * RUtil::makeIndices(int n, double step, double offset){
-    double *out=new double[n];
-  for(int i=0;i<n;i++){
-    out[i]=((double)i*step+offset);
-  }
-  return out;
-}
+// double * RUtil::makeIndices(int n, double step, double offset){
+//     double *out=new double[n];
+//   for(int i=0;i<n;i++){
+//     out[i]=((double)i*step+offset);
+//   }
+//   return out;
+// }
 
 double RUtil::toDBPower(double val, double ref){
   return 10*log10(val/ref);
