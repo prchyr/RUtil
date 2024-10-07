@@ -1665,13 +1665,13 @@ double RUtil::rms(TGraph * gr, double t_low, double t_high){
   return sqrt(rms/n);
 }
 
-double RUtil::rms(int N, double *data){
-  double rms=0.;
-  for(int i=0;i<N;i++){
-    rms+=(data[i]*data[i]);
-  }
-  return sqrt(rms/N);
-}
+// double RUtil::rms(int N, double *data){
+//   double rms=0.;
+//   for(int i=0;i<N;i++){
+//     rms+=(data[i]*data[i]);
+//   }
+//   return sqrt(rms/N);
+// }
 
 double RUtil::amplitude(TGraph * gr, double t_low, double t_high){
   t_low=t_low>0.?t_low:0.;

@@ -492,11 +492,19 @@ utilities.
   }
   return sum/50.;
 }
+
+  template <typename T> double rms(int N, T * data){
+    double rms=0.;
+    for(int i=0;i<N;i++){
+      rms+=(data[i]*data[i]);
+    }
+    return sqrt((double)rms/(double)N);
+  }
   //get the RMS
   //this one uses a tgraph and you can pick a time range
   double rms(TGraph * gr, double t_low, double t_high);
   //this one uses an array of length N and gets the RMS for the full thing.
-  double rms(int N, double * data);
+  //  double rms(int N, double * data);
   //get the power
   double avgPower(TGraph *gr, double t_low, double t_high);
   //get the amplitude
