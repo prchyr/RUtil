@@ -316,6 +316,7 @@ utilities.
   TGraph * alignToOther(TGraph * gr1, TGraph * gr2, TGraph* othGr, double max_delay=999999., double t_low=0., double t_high=999999.);
   //align a large number of graphs to the first graph in the set.
   vector<TGraph*> alignMultiple(vector<TGraph*> inGr, double max_delay=999999., double t_low=0., double t_high=999999.);
+  vector<TGraph*> alignMultiple(int N,TGraph**inGr, double max_delay=999999., double t_low=0., double t_high=999999.);
 
 //return the average of a bunch of aligned graphs
   TGraph* alignMultipleAndAverage(vector<TGraph*> inGr, double max_delay=999999., double t_low=0., double t_high=999999.);
