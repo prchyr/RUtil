@@ -2936,6 +2936,19 @@ vector<TGraph*> RUtil::alignMultiple(vector<TGraph*> inGr, double max_delay, dou
   }
   return outgraphs;
 }
+
+vector<TGraph*> RUtil::alignMultiple(int N, TGraph** inGr, double max_delay, double t_low, double t_high){   
+  vector<TGraph*>outgraphs;
+  TGraph *g1=inGr[0];
+  //  g1->Draw("al PLC");
+  outgraphs.push_back(g1);
+  for(int i=1;i<N;i++){
+    outgraphs.push_back(align(g1, inGr[i], max_delay, t_low, t_high));
+    //    cout<<i<<endl;
+    //    outgraphs[i]->Draw("l same PLC");
+  }
+  return outgraphs;
+}
 TGraph* RUtil::alignMultipleAndAverage(vector<TGraph*> inGr, double max_delay, double t_low, double t_high){   
   vector<TGraph*>outgraphs;
   TGraph *g1=inGr[0];
