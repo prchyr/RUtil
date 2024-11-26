@@ -2213,28 +2213,31 @@ TGraph * RUtil::sincInterpolateGraph(TGraph *inGr, double interpGSs){
   return outGr;
 }
 //experimental
-TGraph * RUtil::sincInterpolateGraphDev(TGraph *inGr, double interpGSs){
-
-  double dt = 1./interpGSs;
-  vector<double> xx, yy;
-  double t=0;
-  double num=0.;
+TGraph * RUtil::sincInterpolateGraphDev(TGraph *inGr, double factor, int N){
+  double dataT=inGr->GetX()[1]-inGr->GetX()[0];
+  double targetT=dataT/factor;
+  double interpGSs=1./targetT;
+  // double dt = 1./interpGSs;
+  // vector<double> xx, yy;
+  // double t=0;
+  // double num=0.;
   
-  t=0;    
-  while(t<inGr->GetX()[inGr->GetN()-2]){
-    xx.push_back(t);
-    double temp=0;
-    for(int i=0;i<inGr->GetN()-1;i++){
-      double T = inGr->GetX()[i+1]-inGr->GetX()[i];
-      temp+=inGr->GetY()[i]*RUtil::sinc((t-((double)i*T))/T);
+  // t=0;    
+  // while(t<inGr->GetX()[inGr->GetN()-2]){
+  //   xx.push_back(t);
+  //   double temp=0;
+  //   for(int i=0;i<inGr->GetN()-1;i++){
+  //     double T = inGr->GetX()[i+1]-inGr->GetX()[i];
+  //     temp+=inGr->GetY()[i]*RUtil::sinc((t-((double)i*T))/T);
 
-    }
+  //   }
   
-    yy.push_back(temp);
-    t+=dt;
-  }
-  TGraph *outGr = new TGraph(xx.size(), &xx[0], &yy[0]);
-  return outGr;
+  //   yy.push_back(temp);
+  //   t+=dt;
+  // }
+  // TGraph *outGr = new TGraph(xx.size(), &xx[0], &yy[0]);
+  // return outGr;
+  return sincInterpolateGraphFast(inGr, interpGSs, N);
 }
 
 
@@ -3237,6 +3240,7 @@ TGraph * RUtil::removeCW(TGraph *ingr, double freq){
   RUtil::add(y_temp1,N, y_temp0, cosine_scaled, -1);
   RUtil::scale(result,N, y_temp1, norm_of_y);
   auto gr=new TGraph(N, RUtil::makeIndices(N,dt), result);
+  delete x,y;
   return gr;
   
 }
