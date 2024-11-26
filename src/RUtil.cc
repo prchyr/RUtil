@@ -3239,8 +3239,9 @@ TGraph * RUtil::removeCW(TGraph *ingr, double freq){
   RUtil::add(y_temp0,N, y_normalized, sine_scaled, -1);
   RUtil::add(y_temp1,N, y_temp0, cosine_scaled, -1);
   RUtil::scale(result,N, y_temp1, norm_of_y);
-  auto gr=new TGraph(N, RUtil::makeIndices(N,dt), result);
-  delete x,y;
+  auto ind=RUtil::makeIndices(N,dt);
+  auto gr=new TGraph(N, ind, result);
+  delete ind;
   return gr;
   
 }
